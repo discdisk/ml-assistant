@@ -1,4 +1,5 @@
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import torch
 from pprint import pprint
 import json
 from os import path
@@ -10,7 +11,7 @@ if path.isfile('label_keys.json'):
 else:
     print('label_keys.json file missing!!')
     exit()
-model_name = "./results/checkpoint-240"
+model_name = "./results/checkpoint-280"
 pt_model = AutoModelForSequenceClassification.from_pretrained(
     model_name, output_hidden_states=True, output_attentions=False)
 tokenizer = AutoTokenizer.from_pretrained('bert-base-chinese')
@@ -24,4 +25,29 @@ pt_outputs_digits = pt_outputs.logits.softmax(dim=1)
 pprint(pt_outputs_digits)
 pt_outputs = pt_outputs_digits.argmax(dim=1)
 pprint([f'{t}: {label_keys[label]} {digit[label]:.2f}' for t, label,
-       digit in zip(texts, pt_outputs, pt_outputs_digits)])
+        digit in zip(texts, pt_outputs, pt_outputs_digits)])
+
+# Creating the trace
+print(pt_batch)
+# Creating a dummy input
+tokens_tensor = torch.tensor(pt_batch['input_ids'])
+att_tensor = torch.tensor(pt_batch['attention_mask'])
+segments_tensors = torch.tensor(pt_batch['token_type_ids'])
+dummy_input = [tokens_tensor, segments_tensors]
+
+pt_model = AutoModelForSequenceClassification.from_pretrained(
+    model_name, output_hidden_states=True, output_attentions=False, torchscript=True)
+traced_model = torch.jit.trace(
+    pt_model, [tokens_tensor, segments_tensors])
+torch.jit.save(traced_model, "traced_bert.pt")
+
+loaded_model = torch.jit.load("traced_bert.pt")
+loaded_model.eval()
+
+pooled_output, encoder_layer = loaded_model(*dummy_input)
+
+pooled_output_digits = pooled_output.softmax(dim=1)
+pooled_output = pooled_output.argmax(dim=1)
+
+pprint([f'{t}: {label_keys[label]} {digit[label]:.2f}' for t, label,
+        digit in zip(texts, pooled_output, pooled_output_digits)])

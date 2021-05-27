@@ -1,11 +1,7 @@
 from transformers import AutoModelForSequenceClassification, TrainingArguments, Trainer
-from custom_dataset import get_dataset
+from custom_dataset import get_dataset, train_data, test_data
 import json
 from os import path
-train_data = {'天气': ["天气怎么样", "下雨了吗", "冷吗", "气温怎么样"],
-              '预定': ["我今天要做的事", "我的记事表"], '编辑器': ["打开记事本", "打开编辑器"], '吃饭': ["吃个西瓜", "打篮球"]}
-test_data = {'天气': ["开太阳了吗", "热不热"], '预定': [
-    "等会儿的预定", "日程表"], '编辑器': ["编辑器", "开始编程"]}
 
 if path.isfile('label_keys.json'):
     with open('label_keys.json') as json_file:
@@ -20,7 +16,7 @@ with open('label_keys.json', 'w') as json_file:
     json.dump(label_keys, json_file)
 
 model = AutoModelForSequenceClassification.from_pretrained(
-    "bert-base-chinese", num_labels=len(label_keys)+1)
+    "bert-base-chinese", num_labels=len(label_keys)+1, torchscript=True)
 
 batch_size = 1
 training_args = TrainingArguments(
@@ -30,16 +26,16 @@ training_args = TrainingArguments(
     per_device_train_batch_size=batch_size,
     per_device_eval_batch_size=batch_size,   # batch size for evaluation
     # number of warmup steps for learning rate scheduler
-    warmup_steps=80,
+    warmup_steps=200,
     weight_decay=0.01,                       # strength of weight decay
     logging_dir='./logs',                    # directory for storing logs
     logging_steps=20,
-    save_steps=40,
+    save_steps=20,
     evaluation_strategy='steps',
     save_strategy='steps',
     logging_strategy='steps',
     eval_steps=20,
-    label_smoothing_factor=0.1
+    # label_smoothing_factor=0.1
 )
 
 trainer = Trainer(
