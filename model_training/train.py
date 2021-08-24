@@ -2,9 +2,11 @@ from transformers import AutoModelForSequenceClassification, TrainingArguments, 
 from custom_dataset import get_dataset, train_data, test_data
 import json
 from os import path
+from pathlib import Path
+current_path = Path(__file__).resolve().parent
 
-if path.isfile('label_keys.json'):
-    with open('label_keys.json') as json_file:
+if path.isfile(f'{current_path}/label_keys.json'):
+    with open(f'{current_path}/label_keys.json') as json_file:
         label_keys = json.load(json_file)
 else:
     label_keys = None
@@ -12,7 +14,7 @@ else:
 train_dataset, label_keys = get_dataset(train_data, label_keys=label_keys)
 test_dataset, label_keys = get_dataset(test_data, label_keys=label_keys)
 
-with open('label_keys.json', 'w') as json_file:
+with open(f'{current_path}/label_keys.json', 'w') as json_file:
     json.dump(label_keys, json_file)
 
 model = AutoModelForSequenceClassification.from_pretrained(
@@ -20,7 +22,7 @@ model = AutoModelForSequenceClassification.from_pretrained(
 
 batch_size = 1
 training_args = TrainingArguments(
-    output_dir='./results',                  # output directory
+    output_dir=f'{current_path}/results',                  # output directory
     num_train_epochs=40,                      # total number of training epochs
     # batch size per device during training
     per_device_train_batch_size=batch_size,
@@ -28,7 +30,8 @@ training_args = TrainingArguments(
     # number of warmup steps for learning rate scheduler
     warmup_steps=200,
     weight_decay=0.01,                       # strength of weight decay
-    logging_dir='./logs',                    # directory for storing logs
+    # directory for storing logs
+    logging_dir=f'{current_path}/logs',
     logging_steps=20,
     save_steps=20,
     evaluation_strategy='steps',

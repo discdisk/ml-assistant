@@ -57,8 +57,12 @@ def data_split(dataset: List[Dict]):
     return texts, labels
 
 
+def get_tokenizer(model_name: str = "bert-base-chinese", use_fast: bool = False) -> AutoTokenizer:
+    return AutoTokenizer.from_pretrained(model_name, use_fast=True)
+
+
 def get_dataset(data: Dict[str, List[str]], label_keys: Optional[List[str]] = None, model_name: str = "bert-base-chinese") -> Tuple[Dataset, List[str]]:
-    tokenizer = AutoTokenizer.from_pretrained(model_name, use_fast=True)
+    tokenizer = get_tokenizer(model_name, use_fast=True)
     label_keys = label_keys or list(set(data.keys()))
     dataset = [{'label': label_keys.index(k) if k in label_keys else len(
         label_keys), 'sentence': s} for k, v in data.items() for s in v]
