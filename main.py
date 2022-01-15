@@ -40,3 +40,4 @@ if __name__ == '__main__':
     server = HTTPServer(host, Resquest)
     print("Starting server, listen at: %s:%s" % host)
     server.serve_forever()
+    print('hello')
